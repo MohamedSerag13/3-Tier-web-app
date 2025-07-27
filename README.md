@@ -1,352 +1,478 @@
-# Scalable 3-Tier Web Application on AWS
+# 3 Tier Web app on AWS
+This project is a full-stack web application built using React js for the frontend, Express js for the backend, and MySQL as the database. The application is designed to demonstrate the implementation of a 3-tier architecture, where the presentation layer (React js), application logic layer (Express js), and data layer (MySQL) are separated into distinct tiers.
 
-## Overview
 
-This solution demonstrates a highly available and scalable 3-tier web application architecture deployed on AWS. The application implements best practices for compute scalability, security, and cost optimization using Amazon EC2, Application Load Balancer (ALB), Auto Scaling Groups (ASG), and Amazon RDS.
+## Project Overview 
+#### Architecture
+![Dashboard](./frontend/public/ss/dfgfg.jpeg)
 
-The architecture separates the presentation layer (React.js frontend), application logic layer (Express.js backend), and data layer (MySQL database) into distinct tiers, ensuring modularity, scalability, and maintainability.
+#### Dashboard of the app
+![Dashboard](./frontend/public/ss/dashboard.png)
 
-## Architecture
 
-![Architecture Diagram](./frontend/public/ss/dfgfg.jpeg)
+## Connecting to private EC2 instance via a bastion host
+1. To change the ssh key permission:
 
-### Architecture Components
-
-**Presentation Tier:**
-- Application Load Balancer distributing traffic across multiple availability zones
-- Auto Scaling Group managing EC2 instances running NGINX and React.js frontend
-- Cross-zone load balancing for high availability
-
-**Application Tier:**
-- Auto Scaling Group managing EC2 instances running Node.js/Express.js backend
-- Internal Application Load Balancer for backend services
-- PM2 process manager for Node.js application lifecycle management
-
-**Data Tier:**
-- Amazon RDS MySQL with Multi-AZ deployment for high availability
-- Database subnet group spanning multiple availability zones
-- Automated backups and maintenance windows
-
-## AWS Services Used
-
-| Service | Purpose | Configuration |
-|---------|---------|---------------|
-| **Amazon EC2** | Compute instances for web and application tiers | Auto Scaling Groups with t3.micro instances |
-| **Application Load Balancer** | Traffic distribution and high availability | Health checks, sticky sessions, cross-zone balancing |
-| **Auto Scaling Group** | Automatic capacity management | Scale-out at 70% CPU, scale-in at 30% CPU |
-| **Amazon RDS** | Managed MySQL database | Multi-AZ, automated backups, maintenance windows |
-| **Amazon VPC** | Network isolation and security | Public/private subnets, route tables, security groups |
-| **AWS IAM** | Access control and permissions | Roles for EC2 instances, least privilege policies |
-| **Amazon CloudWatch** | Monitoring and logging | Custom metrics, alarms, log aggregation |
-| **Amazon SNS** | Notification service | Auto Scaling notifications, monitoring alerts |
-
-## Key Features
-
-### High Availability
-- **Multi-AZ Deployment**: Resources distributed across multiple availability zones
-- **Auto Scaling**: Automatic instance replacement and capacity adjustment
-- **Database Failover**: RDS Multi-AZ provides automatic database failover
-- **Load Balancing**: Traffic distributed across healthy instances only
-
-### Scalability
-- **Horizontal Scaling**: Auto Scaling Groups adjust capacity based on demand
-- **Load Distribution**: Application Load Balancer efficiently routes requests
-- **Database Performance**: RDS handles database scaling and optimization
-- **Content Delivery**: NGINX serves static content efficiently
-
-### Security
-- **Network Segmentation**: Public subnets for load balancers, private subnets for application and database
-- **Security Groups**: Restrictive firewall rules following least privilege principle
-- **IAM Roles**: Secure access to AWS services without embedded credentials
-- **Database Security**: Database instances isolated in private subnets
-
-### Cost Optimization
-- **Auto Scaling**: Reduces costs during low traffic periods
-- **Instance Right-Sizing**: Appropriate instance types for workload requirements
-- **Monitoring**: CloudWatch metrics enable resource optimization
-- **Automated Management**: Reduced operational overhead
-
-## Application Details
-
-### Frontend (Presentation Tier)
-- **Technology**: React.js with Vite build system
-- **Web Server**: NGINX with reverse proxy configuration
-- **Features**: Responsive design, API integration, health check endpoint
-- **Deployment**: Built artifacts served by NGINX
-
-### Backend (Application Tier)
-- **Technology**: Node.js with Express.js framework
-- **Process Management**: PM2 for application lifecycle management
-- **Features**: RESTful API, database connectivity, logging
-- **Monitoring**: CloudWatch Logs integration
-
-### Database (Data Tier)
-- **Technology**: MySQL 8.0 on Amazon RDS
-- **Configuration**: Multi-AZ deployment, automated backups
-- **Security**: Private subnet deployment, security group restrictions
-- **Performance**: Optimized for application workload
-
-## Deployment Guide
-
-### Prerequisites
-- AWS Account with appropriate IAM permissions
-- AWS CLI configured with credentials
-- Basic understanding of AWS services (VPC, EC2, RDS)
-
-### Infrastructure Setup
-
-#### 1. Network Configuration
 ```bash
-# VPC with public and private subnets
-# Internet Gateway for public subnet access
-# NAT Gateway for private subnet internet access
-# Route tables for traffic routing
+chmod 400 your_key.pem
 ```
 
-#### 2. Security Groups
+2. To start ssh agent:
+
 ```bash
-# ALB Security Group: HTTP/HTTPS from internet
-# Web Tier Security Group: HTTP from ALB only
-# App Tier Security Group: Application port from Web Tier only
-# Database Security Group: MySQL port from App Tier only
+eval "$(ssh-agent -s)"  
 ```
 
-#### 3. Database Setup
+3. To add key to ssh agent:
+
 ```bash
-# RDS MySQL instance with Multi-AZ
-# Database subnet group
-# Parameter group optimization
-# Automated backup configuration
+ssh-add your_key.pem
 ```
 
-### Application Deployment
+4. To ssh into bastion host with agent forwarding:
 
-#### 1. Launch Template Configuration
-Use the provided user data scripts for automated instance configuration:
-
-- **Presentation Tier**: Installs NGINX, clones repository, builds React app
-- **Application Tier**: Installs Node.js, PM2, configures backend service
-- **CloudWatch Integration**: Enables application logging to CloudWatch
-
-#### 2. Auto Scaling Groups
 ```bash
-# Presentation Tier ASG: Min 2, Max 10 instances
-# Application Tier ASG: Min 2, Max 10 instances
-# Scaling policies based on CPU utilization
-# Health checks with ALB integration
+ssh -A ec2-user@bastion_host_public_ip
 ```
 
-#### 3. Load Balancer Configuration
+5. To connect private instance from the bastion host:
+
 ```bash
-# Public ALB for presentation tier
-# Internal ALB for application tier
-# Health check endpoints
-# Target group configurations
+ssh ec2-user@private_instance_private_ip 
 ```
 
-## Monitoring and Logging
+## Setting up the Data Tier
+#### Install MySQL
+1. To download MySQL repository package:
 
-### CloudWatch Metrics
-- EC2 instance metrics (CPU, memory, network)
-- Auto Scaling Group metrics
-- Application Load Balancer metrics
-- RDS performance metrics
-
-### Application Logging
-- Backend application logs streamed to CloudWatch Logs
-- NGINX access and error logs
-- Database query logs for performance analysis
-
-### Alerting
-- SNS notifications for Auto Scaling events
-- CloudWatch alarms for resource thresholds
-- Database performance alerts
-
-## Performance Optimization
-
-### Auto Scaling Configuration
 ```bash
-# Scale-out policy: CPU > 70% for 2 consecutive periods
-# Scale-in policy: CPU < 30% for 2 consecutive periods
-# Cooldown periods to prevent rapid scaling
-# Instance warm-up time configuration
+wget https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
 ```
 
-### Load Balancer Optimization
+2. To verify the package download:
+
 ```bash
-# Connection draining for graceful shutdowns
-# Sticky sessions for stateful applications
-# Health check optimization
-# Cross-zone load balancing
+ls -lrt 
 ```
 
-### Database Performance
+3. To install MySQL repository package:
+
 ```bash
-# RDS parameter group optimization
-# Connection pooling in application
-# Query optimization and indexing
-# Read replica considerations for read-heavy workloads
+sudo dnf install -y mysql80-community-release-el9-1.noarch.rpm 
 ```
 
-## Security Best Practices
+4. To import GPG key: 
 
-### Network Security
-- Private subnets for application and database tiers
-- Security groups with minimal required access
-- NACLs for additional network-level security
-- VPC Flow Logs for network monitoring
-
-### Access Control
-- IAM roles for EC2 instances (no embedded credentials)
-- Least privilege principle for all permissions
-- Regular security group audits
-- AWS Systems Manager for secure instance access
-
-### Data Protection
-- RDS encryption at rest and in transit
-- SSL/TLS certificates for web traffic
-- Database connection encryption
-- Regular automated backups
-
-## Cost Management
-
-### Resource Optimization
-- Right-sized instances based on performance metrics
-- Auto Scaling for dynamic capacity management
-- Reserved Instances for predictable workloads
-- Spot Instances for non-critical workloads (where applicable)
-
-### Monitoring and Alerts
-- AWS Cost Explorer for cost analysis
-- Budget alerts for cost thresholds
-- Resource utilization monitoring
-- Unused resource identification
-
-## Troubleshooting
-
-### Common Issues
-1. **Instance Launch Failures**: Check security groups, subnet configurations
-2. **Database Connection Issues**: Verify security groups, connection strings
-3. **Auto Scaling Issues**: Review scaling policies, health checks
-4. **Load Balancer Health Checks**: Verify application endpoints, security groups
-
-### Debugging Steps
 ```bash
-# Check instance logs
-sudo tail -f /var/log/cloud-init-output.log
-
-# Verify application status
-sudo systemctl status nginx
-pm2 status
-
-# Test connectivity
-curl http://localhost/health
-mysql -h <rds-endpoint> -u <username> -p
+sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023 
 ```
 
-## Learning Outcomes
+5. To update package index:
 
-This project demonstrates proficiency in:
-
-✅ **High Availability Architecture**
-- Multi-AZ deployment strategies
-- Auto Scaling Group configuration
-- Load balancer implementation
-
-✅ **Security Implementation**
-- Network segmentation with VPC
-- IAM roles and policies
-- Security group configurations
-
-✅ **Scalability Design**
-- Horizontal scaling with Auto Scaling
-- Load distribution strategies
-- Database scaling considerations
-
-✅ **Monitoring and Alerting**
-- CloudWatch metrics and alarms
-- Application logging strategies
-- Performance monitoring
-
-✅ **Cost Optimization**
-- Auto Scaling for cost efficiency
-- Resource right-sizing
-- Monitoring and optimization strategies
-
-## Future Enhancements
-
-### Potential Improvements
-- **CI/CD Pipeline**: AWS CodePipeline for automated deployments
-- **Content Delivery**: CloudFront CDN for global content delivery
-- **Containerization**: Migration to ECS or EKS for container orchestration
-- **Microservices**: Breaking down application into microservices architecture
-- **Caching**: ElastiCache implementation for improved performance
-- **WAF Integration**: Web Application Firewall for enhanced security
-
-### Monitoring Enhancements
-- AWS X-Ray for distributed tracing
-- Enhanced CloudWatch dashboards
-- AWS Config for compliance monitoring
-- AWS CloudTrail for API auditing
-
-## Repository Structure
-```
-├── README.md
-├── frontend/
-│   ├── src/
-│   ├── public/
-│   │   └── ss/
-│   │       ├── dfgfg.jpeg        # Architecture diagram
-│   │       └── dashboard.png      # Application screenshot
-│   ├── package.json
-│   └── vite.config.js
-├── backend/
-│   ├── server.js
-│   ├── db.sql                     # Database schema
-│   ├── package.json
-│   └── logs/
-└── user-data-scripts/
-    ├── presentation-tier.sh
-    ├── application-tier.sh
-    └── cloudwatch-config.sh
+```bash
+sudo dnf update –y 
 ```
 
-## Technical Specifications
+6. To install MySQL server:
 
-| Component | Specification |
-|-----------|---------------|
-| **Instance Types** | t3.micro (adjustable based on workload) |
-| **Operating System** | Amazon Linux 2 |
-| **Database** | MySQL 8.0 Community Edition |
-| **Web Server** | NGINX 1.20+ |
-| **Application Runtime** | Node.js 18.x with PM2 |
-| **Load Balancer** | Application Load Balancer (Layer 7) |
-| **Auto Scaling** | Target Tracking Scaling Policy |
+```bash
+sudo dnf install -y mysql-community-server  
+```
 
-## Contributing
+7. To start the mysql service:
 
-To contribute to this project:
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+```bash
+sudo systemctl start mysqld
+```
 
-## Support
+8. To enable mysql to start on boot:
 
-For questions or issues:
-- Review the troubleshooting section
-- Check AWS documentation
-- Open an issue in this repository
+```bash
+sudo systemctl enable mysqld 
+```
 
-## License
+9. To secure the mysql installation:
 
-This project is available under the MIT License. See LICENSE file for details.
+```bash
+sudo grep 'temporary password' /var/log/mysqld.log 
 
----
+sudo mysql_secure_installation 
+```
 
-**Author**: Mohamed Serag  
-**AWS Solutions Architect Associate Candidate**  
-**Contact**: [mohamedserageddin12@gmail.com](mailto:mohamedserageddin12@gmail.com) | [LinkedIn Profile](www.linkedin.com/in/mohamed-serag-el-din-5595981b3)
+10. To create database and restore data, please refer SQL scripts on [db.sql](./backend/db.sql) file.
 
-*This project demonstrates AWS Solutions Architect Associate level competencies in designing and implementing scalable, secure, and cost-effective cloud architectures.*
+
+## Setting up the Application Tier
+#### Install GIT
+```bash
+sudo yum update -y
+
+sudo yum install git -y
+
+git — version
+```
+
+#### Clone repository
+```bash
+git clone https://github.com/learnItRightWay01/react-node-mysql-app.git
+```
+
+#### Install node.js
+1. To install node version manager (nvm)
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+```
+
+2. To load nvm
+```bash
+source ~/.bashrc
+```
+
+3. To use nvm to install the latest LTS version of Node.js
+```bash
+nvm install --lts
+```
+
+4. To test that Node.js is installed and running
+```bash
+node -e "console.log('Running Node.js ' + process.version)"
+```
+
+## Setting up the Presentation Tier
+#### Install GIT
+```
+PLEASE REFER ABOVE
+```
+
+#### Clone repository
+```
+PLEASE REFER ABOVE
+```
+
+#### Install node.js
+```
+PLEASE REFER ABOVE
+```
+
+#### Install NGINX
+```bash
+dnf search nginx
+
+sudo dnf install nginx
+
+sudo systemctl restart nginx 
+
+nginx -v
+```
+
+#### Copy react.js build files
+```bash
+sudo cp -r dist /usr/share/nginx/html 
+```
+
+#### Update NGINX config
+1. Server name and root
+```
+server_name    domain.com www.subdomain.com
+root           /usr/share/nginx/html/dist
+```
+
+2. Setup reverse proxy
+```
+location /api { 
+   proxy_pass http://application_tier_instance_private_ip:3200/api; 
+}
+```
+
+3. Restart NGINX
+```
+sudo systemctl restart nginx
+```
+
+## User data scripts
+#### Install NGINX
+For [AWS solutions - 06](https://youtu.be/snQlL0fJI3Q) and  [AWS solutions - 07](https://youtu.be/eRX1FI2cFi8)
+
+```bash
+#!/bin/bash 
+# Update package lists 
+yum update -y 
+
+# Install Nginx 
+yum install -y nginx 
+
+# Stop and disable default service (optional) 
+systemctl stop nginx 
+systemctl disable nginx 
+
+# Create a custom welcome message file 
+echo "Welcome to Presentation Tier EC2 instance in Availability Zone B." > /usr/share/nginx/html/index.html 
+
+# Start and enable the Nginx service 
+systemctl start nginx 
+systemctl enable nginx
+```
+
+#### Install NGINX
+For Auto Scaling Group setup.
+
+```bash
+#!/bin/bash 
+# Update the package list and install NGINX 
+sudo yum update -y 
+sudo yum install nginx -y 
+
+# Start and enable NGINX 
+sudo systemctl start nginx 
+sudo systemctl enable nginx 
+
+# Fetch metadata token 
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600") 
+
+# Fetch instance details using IMDSv2 
+INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" "http://169.254.169.254/latest/meta-data/instance-id") 
+AVAILABILITY_ZONE=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" "http://169.254.169.254/latest/meta-data/placement/availability-zone") 
+PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" "http://169.254.169.254/latest/meta-data/public-ipv4") 
+
+# Create a simple HTML page displaying instance details 
+sudo bash -c "cat > /usr/share/nginx/html/index.html <<EOF 
+<h1>Instance Details</h1> 
+<p><b>Instance ID:</b> $INSTANCE_ID</p> 
+<p><b>Availability Zone:</b> $AVAILABILITY_ZONE</p> 
+<p><b>Public IP:</b> $PUBLIC_IP</p> 
+EOF" 
+
+# Restart NGINX to ensure changes are applied 
+sudo systemctl restart nginx 
+```
+
+#### Stress Testing
+```bash
+sudo yum install stress –y 
+stress --cpu 4 --timeout 180s
+
+top
+```
+
+#### Connet to RDS instance via SSH
+##### SSH tunneling through a bastion host
+```bash
+ssh -i /path/to/your/private-key.pem -N -L 3307:<RDS-Endpoint>:3306 ec2-user@<Bastion-Host-IP>
+```
+
+##### SSH tunneling through a bastion host and a private EC2 (SSH chaining)
+```bash
+ssh-add /path/to/your/private-key.pem
+ssh -A -L 3307:localhost:3306 ec2-user@<public-IP> -t "ssh -L 3306:<rds-endpoint>:3306 ec2-user@<private-IP>"
+```
+
+#### Configure Application Tier
+For Auto Scaling Group setup.
+
+```bash
+#!/bin/bash 
+# Update package list and install required packages 
+sudo yum update -y 
+sudo yum install -y git 
+
+# Install Node.js (use NodeSource for the latest version) 
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash - 
+sudo yum install -y nodejs 
+
+# Install PM2 globally 
+sudo npm install -g pm2 
+
+# Define variables 
+REPO_URL="https://github.com/learnItRightWay01/react-node-mysql-app.git" 
+BRANCH_NAME="feature/add-logging" 
+REPO_DIR="/home/ec2-user/react-node-mysql-app/backend" 
+ENV_FILE="$REPO_DIR/.env" 
+
+# Clone the repository 
+cd /home/ec2-user 
+sudo -u ec2-user git clone $REPO_URL 
+cd react-node-mysql-app  
+
+# Checkout to the specific branch 
+sudo -u ec2-user git checkout $BRANCH_NAME 
+cd backend 
+
+# Define the log directory and ensure it exists 
+LOG_DIR="/home/ec2-user/react-node-mysql-app/backend/logs" 
+mkdir -p $LOG_DIR 
+sudo chown -R ec2-user:ec2-user $LOG_DIR
+
+# Append environment variables to the .env file
+echo "LOG_DIR=$LOG_DIR" >> "$ENV_FILE"
+echo "DB_HOST=\"<rds-instance.end.point.region.rds.amazonaws.com>\"" >> "$ENV_FILE"
+echo "DB_PORT=\"3306\"" >> "$ENV_FILE"
+echo "DB_USER=\"<db-user>\"" >> "$ENV_FILE"
+echo "DB_PASSWORD=\"<db-user-password>\"" >> "$ENV_FILE"  # Replace with actual password
+echo "DB_NAME=\"<db-name>\"" >> "$ENV_FILE"
+
+# Install Node.js dependencies as ec2-user
+sudo -u ec2-user npm install
+
+# Start the application using PM2 as ec2-user
+sudo -u ec2-user npm run serve
+
+# Ensure PM2 restarts on reboot as ec2-user
+sudo -u ec2-user pm2 startup systemd 
+sudo -u ec2-user pm2 save 
+```
+
+#### Enabale Cloudwatch logs for Application Tier
+For Auto Scaling Group setup.
+
+```bash
+# Install CloudWatch agent
+sudo yum install -y amazon-cloudwatch-agent
+
+# Create CloudWatch agent configuration
+sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json > /dev/null <<EOL
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/home/ec2-user/react-node-mysql-app/backend/logs/*.log",
+            "log_group_name": "backend-node-app-logs",
+            "log_stream_name": "{instance_id}",
+            "timestamp_format": "%Y-%m-%d %H:%M:%S"
+          }
+        ]
+      }
+    }
+  }
+}
+EOL
+
+# Start CloudWatch agent
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+
+```
+
+#### Configure Presentation Tier
+For Auto Scaling Group setup.
+
+```bash
+#!/bin/bash
+# Update package list and install required packages
+sudo yum update -y
+sudo yum install -y git
+
+# Install Node.js (use NodeSource for the latest version)
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo yum install -y nodejs
+
+# Install NGINX
+sudo yum install -y nginx
+
+# Start and enable NGINX
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+# Define variables
+REPO_URL="https://github.com/learnItRightWay01/react-node-mysql-app.git"
+BRANCH_NAME="feature/add-logging"
+REPO_DIR="/home/ec2-user/react-node-mysql-app/frontend"
+ENV_FILE="$REPO_DIR/.env"
+APP_TIER_ALB_URL="http://<internal-application-tier-alb-end-point.region.elb.amazonaws.com>"  # Replace with your actual alb endpoint
+API_URL="/api"
+
+# Clone the repository as ec2-user
+cd /home/ec2-user
+sudo -u ec2-user git clone $REPO_URL
+cd react-node-mysql-app
+
+# Checkout to the specific branch
+sudo -u ec2-user git checkout $BRANCH_NAME
+cd frontend
+
+# Ensure ec2-user owns the directory
+sudo chown -R ec2-user:ec2-user /home/ec2-user/react-node-mysql-app
+
+# Create .env file with the API_URL
+echo "VITE_API_URL=\"$API_URL\"" >> "$ENV_FILE"
+
+# Install Node.js dependencies as ec2-user
+sudo -u ec2-user npm install
+
+# Build the frontend application as ec2-user
+sudo -u ec2-user npm run build
+
+# Copy the build files to the NGINX directory
+sudo cp -r dist /usr/share/nginx/html/
+
+# Update NGINX configuration
+NGINX_CONF="/etc/nginx/nginx.conf"
+SERVER_NAME="<domain subdomain>"  # Replace with your actual domain name
+
+# Backup existing NGINX configuration
+sudo cp $NGINX_CONF ${NGINX_CONF}.bak
+
+# Write new NGINX configuration
+sudo tee $NGINX_CONF > /dev/null <<EOL
+user nginx;
+worker_processes auto;
+
+error_log /var/log/nginx/error.log warn;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    log_format main '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                    '\$status \$body_bytes_sent "\$http_referer" '
+                    '"\$http_user_agent" "\$http_x_forwarded_for"';
+
+    access_log /var/log/nginx/access.log main;
+
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+EOL
+
+# Create a separate NGINX configuration file
+sudo tee /etc/nginx/conf.d/presentation-tier.conf > /dev/null <<EOL
+server {
+    listen 80;
+    server_name $SERVER_NAME;
+    root /usr/share/nginx/html/dist;
+    index index.html index.htm;
+
+    #health check
+    location /health {
+        default_type text/html;
+        return 200 "<!DOCTYPE html><p>Health check endpoint</p>\n";
+    }
+
+    location / {
+        try_files \$uri /index.html;
+    }
+
+    location /api/ {
+        proxy_pass $APP_TIER_ALB_URL;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOL
+
+
+# Restart NGINX to apply the new configuration
+sudo systemctl restart nginx
+```
