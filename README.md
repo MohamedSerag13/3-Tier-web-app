@@ -347,6 +347,6 @@ This project is available under the MIT License. See LICENSE file for details.
 
 **Author**: Mohamed Serag  
 **AWS Solutions Architect Associate Candidate**  
-**Contact**: [Your Email] | [LinkedIn Profile]
+**Contact**: [mohamedserageddin12@gmail.com](mailto:mohamedserageddin12@gmail.com) | [LinkedIn Profile](www.linkedin.com/in/mohamed-serag-el-din-5595981b3)
 
 *This project demonstrates AWS Solutions Architect Associate level competencies in designing and implementing scalable, secure, and cost-effective cloud architectures.*
